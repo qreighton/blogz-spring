@@ -3,6 +3,7 @@ package org.launchcode.blogz.controllers;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 import org.launchcode.blogz.models.Post;
 import org.launchcode.blogz.models.User;
@@ -24,8 +25,26 @@ public class PostController extends AbstractController {
 	public String newPost(HttpServletRequest request, Model model) {
 		
 		// TODO - implement newPost
+		HttpSession thisSession = request.getSession();
+		User author = getUserFromSession(thisSession);
 		
-		return "redirect:index"; // TODO - this redirect should go to the new post's page  		
+		if (author == null){
+			model.addAttribute("error","please log in");
+			return "redirect:login";
+		}
+		
+		String title = request.getParameter("title");
+		String text = request.getParameter("body");
+		String error = "you need post and title";
+		if (title != "" && text != ""){
+			Post post = new Post(title,text,author);
+			postDao.save(post);
+			model.addAttribute("post",post);
+			return "redirect:/blog/"+author+"/"+post.getUid();}
+		model.addAttribute("error",error);
+		model.addAttribute("title",title);
+		model.addAttribute("body",text);
+		return "newpost"; // TODO - this redirect should go to the new post's page  		
 	}
 	
 	@RequestMapping(value = "/blog/{username}/{uid}", method = RequestMethod.GET)
@@ -33,6 +52,9 @@ public class PostController extends AbstractController {
 		
 		// TODO - implement singlePost
 		
+		Post post = postDao.findByUid(uid);
+		
+		model.addAttribute("post",post);
 		return "post";
 	}
 	
@@ -40,6 +62,11 @@ public class PostController extends AbstractController {
 	public String userPosts(@PathVariable String username, Model model) {
 		
 		// TODO - implement userPosts
+		User user = userDao.findByUsername(username);
+		
+		List<Post> posts = user.getPosts();
+		
+		model.addAttribute("posts",posts);
 		
 		return "blog";
 	}
